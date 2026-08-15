@@ -44,8 +44,8 @@ export async function generateMetadata(): Promise<Metadata> {
       images: [
         {
           url: imageUrl,
-          width: 1568,
-          height: 1003,
+          width: 240,
+          height: 153,
           alt: "John Spurling - Education / Behaviour / AI & Tech / Tools / Media",
         },
       ],
