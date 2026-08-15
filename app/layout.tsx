@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { headers } from "next/headers";
+import { InteractiveBackground } from "@/components/background/InteractiveBackground";
+import { siteConfig } from "./data/site-content";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,17 +15,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteTitle = "John Spurling";
-const siteDescription =
-  "The personal website of John Spurling: writing, projects, notes, and contact.";
-
 async function getMetadataBase() {
   const requestHeaders = await headers();
   const host =
     requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const protocol = requestHeaders.get("x-forwarded-proto") ?? "https";
 
-  return new URL(host ? `${protocol}://${host}` : "https://john-spurling.site");
+  return new URL(host ? `${protocol}://${host}` : siteConfig.canonicalUrl);
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -32,30 +30,30 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     metadataBase,
-    title: siteTitle,
-    description: siteDescription,
+    title: siteConfig.title,
+    description: siteConfig.description,
     icons: {
       icon: "/favicon.svg",
       shortcut: "/favicon.svg",
     },
     openGraph: {
-      title: siteTitle,
-      description: siteDescription,
+      title: siteConfig.title,
+      description: siteConfig.description,
       type: "website",
       url: metadataBase.toString(),
       images: [
         {
           url: imageUrl,
-          width: 1782,
-          height: 927,
-          alt: "John Spurling - Writing / Projects / Notes",
+          width: 1568,
+          height: 1003,
+          alt: "John Spurling - Education / Behaviour / AI & Tech / Tools / Media",
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: siteTitle,
-      description: siteDescription,
+      title: siteConfig.title,
+      description: siteConfig.description,
       images: [imageUrl],
     },
   };
@@ -71,6 +69,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <InteractiveBackground />
         {children}
       </body>
     </html>

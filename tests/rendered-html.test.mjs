@@ -31,25 +31,37 @@ test("server-renders the John Spurling homepage", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>John Spurling<\/title>/i);
+  assert.match(html, /<title>John Spurling \| Education, Behaviour, AI, Tools and Media<\/title>/i);
   assert.match(html, /John Spurling/);
-  assert.match(html, /Writing/);
-  assert.match(html, /Projects/);
-  assert.match(html, /hello@johnspurling\.com/);
+  assert.match(html, /Education/);
+  assert.match(html, /Classroom behaviour/);
+  assert.match(html, /AI &amp; Tech|AI & Tech/);
+  assert.match(html, /Tools &amp; Resources|Tools & Resources/);
+  assert.match(html, /YouTube/);
+  assert.match(html, /Spotify/);
+  assert.match(html, /johnspurling\.co\.uk/);
   assert.match(html, /\/og\.png/);
+  assert.doesNotMatch(html, /johnspurling\.com|hello@johnspurling/i);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });
 
-test("keeps the starter preview removed", async () => {
-  const [page, layout, packageJson, agents] = await Promise.all([
+test("keeps the homepage data-driven and starter preview removed", async () => {
+  const [page, layout, data, packageJson, agents] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/data/site-content.ts", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
     readFile(new URL("../AGENTS.md", import.meta.url), "utf8"),
   ]);
 
   assert.doesNotMatch(page, /SkeletonPreview|codex-preview/);
   assert.doesNotMatch(layout, /Starter Project|codex-preview|_sites-preview/);
+  assert.match(page, /ToolGrid/);
+  assert.match(data, /toolCards/);
+  assert.match(data, /featuredVideos/);
+  assert.match(data, /mediaChannels/);
+  assert.match(data, /johnspurling\.co\.uk/);
+  assert.doesNotMatch(data, /johnspurling\.com|hello@johnspurling/i);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
   assert.match(agents, /John Spurling/);
 

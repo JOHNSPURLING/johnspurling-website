@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This repository is the personal website for John Spurling. Keep the site concise, polished, and easy to evolve as real biography, project, writing, and contact details are added.
+This repository is the personal professional platform for John Spurling at `johnspurling.co.uk`. Keep the site concise, polished, and easy to evolve as real biography, project, writing, media, tool and contact details are added.
 
 ## Stack
 
@@ -29,9 +29,10 @@ pnpm run lint
 ## Site Direction
 
 - Treat "John Spurling" as the primary brand signal in the first viewport.
+- Use `johnspurling.co.uk` as the public domain. Do not use a `.com` domain.
 - Do not invent detailed biography, credentials, employers, publications, or social links.
 - Prefer precise placeholder language that is easy to replace with John's real copy.
-- Keep the visual language quiet, editorial, and practical rather than generic SaaS or decorative portfolio chrome.
+- Keep the visual language modern, dark, digital and professional rather than generic SaaS, consultancy, portfolio or blog chrome.
 - Use responsive layouts that preserve readable text and stable spacing on mobile.
 
 ## Coding Notes
