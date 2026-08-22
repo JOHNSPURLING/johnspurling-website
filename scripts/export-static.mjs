@@ -6,14 +6,27 @@ const projectRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const outputDir = resolve(projectRoot, "hostinger-static");
 const clientDir = resolve(projectRoot, "dist/client");
 const workerPath = new URL("../dist/server/index.js", import.meta.url);
-const siteUrl = "https://johnspurling.co.uk/";
+const siteOrigin = "https://johnspurling.co.uk";
+const routes = [
+  "/",
+  "/about",
+  "/behaviour",
+  "/leadership",
+  "/ai-tech",
+  "/tools",
+  "/maths-resources",
+  "/videos",
+  "/media",
+  "/blog",
+  "/contact",
+];
 
-async function renderHomePage() {
-  workerPath.searchParams.set("static", `${process.pid}-${Date.now()}`);
+async function renderRoute(pathname) {
+  workerPath.searchParams.set("static", `${process.pid}-${Date.now()}-${pathname}`);
   const { default: worker } = await import(workerPath.href);
 
   const response = await worker.fetch(
-    new Request(siteUrl, {
+    new Request(new URL(pathname, siteOrigin), {
       headers: { accept: "text/html" },
     }),
     {
@@ -36,7 +49,7 @@ async function renderHomePage() {
   );
 
   if (!response.ok) {
-    throw new Error(`Static render failed with HTTP ${response.status}`);
+    throw new Error(`Static render for ${pathname} failed with HTTP ${response.status}`);
   }
 
   const contentType = response.headers.get("content-type") ?? "";
@@ -45,6 +58,12 @@ async function renderHomePage() {
   }
 
   return response.text();
+}
+
+async function writeRoute(pathname, html) {
+  const routeDir = pathname === "/" ? outputDir : resolve(outputDir, `.${pathname}`);
+  await mkdir(routeDir, { recursive: true });
+  await writeFile(resolve(routeDir, "index.html"), html);
 }
 
 async function writeHostingerFallback() {
@@ -73,12 +92,16 @@ async function writeHostingerFallback() {
   );
 }
 
-const html = await renderHomePage();
-
 await rm(outputDir, { recursive: true, force: true });
 await mkdir(outputDir, { recursive: true });
 await cp(clientDir, outputDir, { recursive: true });
-await writeFile(resolve(outputDir, "index.html"), html);
+
+for (const route of routes) {
+  const html = await renderRoute(route);
+  await writeRoute(route, html);
+}
+
 await writeHostingerFallback();
 
 console.log(`Static website exported to ${outputDir}`);
+console.log(`Rendered routes: ${routes.join(", ")}`);

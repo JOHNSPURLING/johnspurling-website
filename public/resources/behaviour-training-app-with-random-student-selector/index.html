@@ -1,0 +1,2374 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Behaviour Training App with Random Student Selector</title>
+  <style>
+    :root {
+      --bg: #080b18;
+      --panel: rgba(15, 20, 42, 0.88);
+      --panel-strong: rgba(20, 27, 58, 0.96);
+      --panel-soft: rgba(255, 255, 255, 0.07);
+      --line: rgba(255, 255, 255, 0.14);
+      --line-bright: rgba(125, 247, 255, 0.42);
+      --text: #f7fbff;
+      --muted: #aeb8d5;
+      --quiet: #7985aa;
+      --cyan: #3df2e6;
+      --blue: #47a6ff;
+      --purple: #8f65ff;
+      --pink: #ff72cb;
+      --warning: #ffd166;
+      --danger: #ff6b8a;
+      --good: #4fffb0;
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+      --glow: 0 0 26px rgba(61, 242, 230, 0.2), 0 0 42px rgba(255, 114, 203, 0.14);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background:
+        linear-gradient(140deg, rgba(61, 242, 230, 0.16), transparent 30%),
+        linear-gradient(225deg, rgba(255, 114, 203, 0.14), transparent 36%),
+        linear-gradient(315deg, rgba(71, 166, 255, 0.18), transparent 38%),
+        var(--bg);
+      color: var(--text);
+    }
+
+    body {
+      min-width: 320px;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    button:disabled,
+    input:disabled,
+    select:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .app {
+      height: 100%;
+      padding: clamp(10px, 1.5vw, 18px) clamp(10px, 1.5vw, 18px) 34px;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: minmax(210px, 16vw) minmax(0, 1fr);
+      gap: clamp(10px, 1.2vw, 16px);
+      height: 100%;
+      min-height: 0;
+    }
+
+    .sidebar,
+    .main,
+    .side-tools,
+    .selector-card,
+    .modal-card {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      border-radius: 8px;
+    }
+
+    .sidebar {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      padding: clamp(12px, 1.4vw, 18px);
+      overflow: hidden;
+    }
+
+    .brand {
+      display: grid;
+      gap: 8px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand-mark {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--cyan), var(--blue), var(--purple), var(--pink));
+      color: #050712;
+      font-weight: 900;
+      letter-spacing: 0;
+      box-shadow: var(--glow);
+    }
+
+    .brand h1,
+    .brand p,
+    .topbar h2,
+    .topbar p {
+      margin: 0;
+    }
+
+    .brand h1 {
+      font-size: clamp(1rem, 1.25vw, 1.25rem);
+      line-height: 1.08;
+    }
+
+    .brand p {
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.35;
+    }
+
+    .class-nav {
+      min-height: 0;
+      overflow-y: auto;
+      padding: 14px 2px;
+      display: grid;
+      gap: 8px;
+      align-content: start;
+      scrollbar-width: thin;
+    }
+
+    .nav-label {
+      color: var(--quiet);
+      text-transform: uppercase;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      margin-top: 4px;
+    }
+
+    .class-button,
+    .ghost-button,
+    .soft-button,
+    .danger-button,
+    .primary-button,
+    .mode-chip,
+    .small-button {
+      min-height: 38px;
+      border-radius: 8px;
+      color: var(--text);
+      transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .class-button {
+      width: 100%;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      padding: 10px;
+      text-align: left;
+      border: 1px solid transparent;
+      background: rgba(255, 255, 255, 0.055);
+    }
+
+    .class-button:hover,
+    .ghost-button:hover,
+    .soft-button:hover,
+    .small-button:hover {
+      transform: translateY(-1px);
+      border-color: var(--line-bright);
+    }
+
+    .class-button.is-active {
+      border-color: rgba(61, 242, 230, 0.5);
+      background: linear-gradient(135deg, rgba(61, 242, 230, 0.18), rgba(143, 101, 255, 0.17), rgba(255, 114, 203, 0.13));
+      box-shadow: var(--glow);
+    }
+
+    .class-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 800;
+      font-size: 0.9rem;
+    }
+
+    .class-meta {
+      color: var(--muted);
+      font-size: 0.72rem;
+      white-space: nowrap;
+    }
+
+    .sidebar-actions {
+      display: grid;
+      gap: 8px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+    }
+
+    .advisory {
+      margin: 4px 0 0;
+      color: var(--quiet);
+      font-size: 0.68rem;
+      line-height: 1.35;
+    }
+
+    .main {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.055), transparent 42%),
+        rgba(8, 11, 24, 0.72);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: clamp(12px, 1.35vw, 18px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .topbar h2 {
+      font-size: clamp(1.35rem, 2.2vw, 2.25rem);
+      line-height: 1.05;
+    }
+
+    .topbar p {
+      color: var(--muted);
+      margin-top: 5px;
+      font-size: clamp(0.8rem, 0.95vw, 0.98rem);
+    }
+
+    .top-actions,
+    .button-row,
+    .segmented,
+    .quick-grid {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .workspace {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(330px, 26vw);
+      gap: clamp(10px, 1.2vw, 16px);
+      padding: clamp(10px, 1.2vw, 16px);
+    }
+
+    .selector-card {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 10px;
+      padding: clamp(12px, 1.4vw, 18px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .selector-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(61, 242, 230, 0.07), transparent 24%, rgba(255, 114, 203, 0.06)),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 34%);
+    }
+
+    .selector-card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .selector-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 40px;
+    }
+
+    .status-pill,
+    .count-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 30px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.055);
+      font-size: 0.78rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .status-pill strong,
+    .count-pill strong {
+      color: var(--text);
+    }
+
+    .stage {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      gap: clamp(8px, 1vw, 14px);
+      place-items: center;
+    }
+
+    .wheel-wrap {
+      position: relative;
+      width: min(62vh, 52vw);
+      max-width: 680px;
+      min-width: 300px;
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.34));
+    }
+
+    #wheelCanvas {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+    }
+
+    .wheel-ring {
+      position: absolute;
+      inset: 3.2%;
+      border: 3px solid rgba(255, 255, 255, 0.84);
+      border-radius: 50%;
+      pointer-events: none;
+      box-shadow:
+        inset 0 0 20px rgba(255, 255, 255, 0.16),
+        0 0 28px rgba(61, 242, 230, 0.22);
+    }
+
+    .wheel-hub {
+      position: absolute;
+      width: 16%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle, #ffffff, #8cfbff 45%, #6a55ff);
+      border: 3px solid rgba(255, 255, 255, 0.9);
+      color: #080b18;
+      font-weight: 1000;
+      box-shadow: 0 0 28px rgba(61, 242, 230, 0.36);
+      pointer-events: none;
+    }
+
+    .pointer {
+      position: absolute;
+      top: -5px;
+      left: 50%;
+      width: 0;
+      height: 0;
+      transform: translateX(-50%);
+      border-left: 20px solid transparent;
+      border-right: 20px solid transparent;
+      border-top: 42px solid #ffffff;
+      filter: drop-shadow(0 0 15px rgba(61, 242, 230, 0.6));
+      z-index: 4;
+    }
+
+    .tombola-wrap {
+      width: min(680px, 92%);
+      display: none;
+      place-items: center;
+      gap: 10px;
+    }
+
+    .tombola-window {
+      width: 100%;
+      height: min(48vh, 440px);
+      min-height: 280px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--line-bright);
+      background: linear-gradient(180deg, rgba(61, 242, 230, 0.08), rgba(143, 101, 255, 0.09), rgba(255, 114, 203, 0.08));
+      box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.35), var(--glow);
+      position: relative;
+    }
+
+    .tombola-window::before,
+    .tombola-window::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 35%;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .tombola-window::before {
+      top: 0;
+      background: linear-gradient(180deg, rgba(8, 11, 24, 0.94), transparent);
+    }
+
+    .tombola-window::after {
+      bottom: 0;
+      background: linear-gradient(0deg, rgba(8, 11, 24, 0.94), transparent);
+    }
+
+    .tombola-target-line {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      top: 50%;
+      height: 64px;
+      transform: translateY(-50%);
+      border: 2px solid rgba(255, 255, 255, 0.82);
+      border-radius: 8px;
+      box-shadow: 0 0 28px rgba(255, 114, 203, 0.22);
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .tombola-reel {
+      display: grid;
+      gap: 8px;
+      padding: 10px;
+      transform: translateY(0);
+    }
+
+    .tombola-row {
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: linear-gradient(90deg, rgba(61, 242, 230, 0.18), rgba(71, 166, 255, 0.16), rgba(255, 114, 203, 0.16));
+      font-weight: 1000;
+      font-size: clamp(1.1rem, 2.2vw, 2rem);
+      text-align: center;
+    }
+
+    .tombola-row.is-muted {
+      opacity: 0.45;
+      filter: grayscale(0.4);
+    }
+
+    .tombola-row.is-winner {
+      color: #080b18;
+      background: linear-gradient(90deg, #ffffff, var(--cyan), var(--pink));
+    }
+
+    .result-panel {
+      width: min(860px, 100%);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.065);
+    }
+
+    .selected-label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+    }
+
+    .selected-name {
+      min-height: 1.1em;
+      overflow: hidden;
+      color: var(--text);
+      font-size: clamp(2rem, 4vw, 4.8rem);
+      font-weight: 1000;
+      line-height: 0.98;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-shadow: 0 0 28px rgba(61, 242, 230, 0.24);
+    }
+
+    .message {
+      min-height: 20px;
+      color: var(--warning);
+      font-size: 0.9rem;
+      font-weight: 750;
+    }
+
+    .primary-button {
+      min-width: 118px;
+      min-height: 50px;
+      padding: 0 18px;
+      background: linear-gradient(135deg, var(--cyan), var(--blue) 38%, var(--purple) 70%, var(--pink));
+      color: #050712;
+      font-size: 1.1rem;
+      font-weight: 1000;
+      box-shadow: 0 0 28px rgba(61, 242, 230, 0.28), 0 12px 28px rgba(0, 0, 0, 0.25);
+    }
+
+    .primary-button:hover {
+      transform: translateY(-1px) scale(1.01);
+      box-shadow: 0 0 34px rgba(255, 114, 203, 0.26), 0 16px 34px rgba(0, 0, 0, 0.28);
+    }
+
+    .ghost-button,
+    .soft-button,
+    .danger-button,
+    .small-button {
+      padding: 8px 11px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      font-weight: 850;
+    }
+
+    .danger-button {
+      border-color: rgba(255, 107, 138, 0.35);
+      color: #ffd9e1;
+      background: rgba(255, 107, 138, 0.12);
+    }
+
+    .soft-button.is-active,
+    .mode-chip.is-active {
+      border-color: rgba(61, 242, 230, 0.52);
+      background: rgba(61, 242, 230, 0.16);
+      color: #dffffd;
+      box-shadow: var(--glow);
+    }
+
+    .mode-chip {
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.055);
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 900;
+    }
+
+    .side-tools {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      overflow: hidden;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+      border-bottom: 1px solid var(--line);
+    }
+
+    .tool-tab {
+      min-height: 42px;
+      border-radius: 0;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 900;
+      border-bottom: 2px solid transparent;
+    }
+
+    .tool-tab.is-active {
+      color: var(--text);
+      border-bottom-color: var(--cyan);
+      background: rgba(61, 242, 230, 0.08);
+    }
+
+    .panel-scroll {
+      min-height: 0;
+      overflow-y: auto;
+      padding: 12px;
+      scrollbar-width: thin;
+    }
+
+    .tool-section {
+      display: none;
+      gap: 12px;
+    }
+
+    .tool-section.is-active {
+      display: grid;
+    }
+
+    .panel-block {
+      display: grid;
+      gap: 9px;
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.045);
+    }
+
+    .panel-block h3 {
+      margin: 0;
+      font-size: 0.95rem;
+    }
+
+    .panel-block p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.35;
+    }
+
+    label {
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 850;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(4, 7, 18, 0.64);
+      color: var(--text);
+      outline: 0;
+      padding: 9px 10px;
+      min-height: 38px;
+    }
+
+    textarea {
+      min-height: 92px;
+      resize: none;
+      line-height: 1.35;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: rgba(61, 242, 230, 0.62);
+      box-shadow: 0 0 0 3px rgba(61, 242, 230, 0.11);
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 850;
+    }
+
+    .toggle-row input {
+      width: auto;
+      min-height: auto;
+      accent-color: var(--cyan);
+    }
+
+    .student-list {
+      display: grid;
+      gap: 7px;
+    }
+
+    .student-row {
+      display: grid;
+      grid-template-columns: minmax(74px, 0.9fr) minmax(74px, 0.9fr) 70px minmax(90px, 1.1fr) 58px 66px 34px;
+      gap: 6px;
+      align-items: center;
+      padding: 7px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .student-row.is-muted {
+      opacity: 0.68;
+      background: rgba(255, 255, 255, 0.025);
+    }
+
+    .student-row input,
+    .student-row select {
+      min-height: 32px;
+      padding: 6px 7px;
+      font-size: 0.78rem;
+    }
+
+    .row-count {
+      display: grid;
+      place-items: center;
+      min-height: 30px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-weight: 950;
+      background: rgba(61, 242, 230, 0.08);
+      font-size: 0.82rem;
+    }
+
+    .icon-button {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 107, 138, 0.32);
+      background: rgba(255, 107, 138, 0.12);
+      color: #ffe5eb;
+      font-weight: 1000;
+    }
+
+    .empty-state,
+    .coming-soon {
+      display: grid;
+      place-items: center;
+      gap: 8px;
+      min-height: 190px;
+      text-align: center;
+      border: 1px dashed rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.035);
+      padding: 16px;
+    }
+
+    .coming-soon strong {
+      color: var(--text);
+      font-size: 1.35rem;
+    }
+
+    .footer {
+      position: fixed;
+      left: 50%;
+      bottom: 8px;
+      transform: translateX(-50%);
+      color: rgba(224, 231, 255, 0.62);
+      font-size: 0.72rem;
+      z-index: 50;
+      pointer-events: none;
+      text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: none;
+      place-items: center;
+      padding: 18px;
+      background: rgba(3, 5, 14, 0.78);
+      backdrop-filter: blur(18px);
+    }
+
+    .modal-overlay.is-open {
+      display: grid;
+    }
+
+    .modal-card {
+      width: min(980px, 96vw);
+      max-height: calc(100vh - 64px);
+      overflow: auto;
+      padding: clamp(16px, 2vw, 24px);
+      background:
+        linear-gradient(135deg, rgba(61, 242, 230, 0.1), transparent 30%),
+        linear-gradient(225deg, rgba(255, 114, 203, 0.12), transparent 32%),
+        rgba(13, 18, 39, 0.98);
+    }
+
+    .class-dialog {
+      width: min(520px, 94vw);
+    }
+
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: start;
+      margin-bottom: 14px;
+    }
+
+    .modal-card h2,
+    .modal-card p {
+      margin: 0;
+    }
+
+    .modal-card h2 {
+      font-size: clamp(1.6rem, 3vw, 2.75rem);
+      line-height: 1.02;
+    }
+
+    .modal-card p {
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .setup-options {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    .setup-card {
+      display: grid;
+      gap: 8px;
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.045);
+      cursor: pointer;
+    }
+
+    .setup-card.is-active {
+      border-color: rgba(61, 242, 230, 0.6);
+      background: linear-gradient(135deg, rgba(61, 242, 230, 0.16), rgba(143, 101, 255, 0.14), rgba(255, 114, 203, 0.12));
+      box-shadow: var(--glow);
+    }
+
+    .setup-card strong {
+      font-size: 1rem;
+    }
+
+    .setup-card span {
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.35;
+    }
+
+    .setup-controls {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    body.presentation .shell {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    body.presentation .sidebar,
+    body.presentation .side-tools,
+    body.presentation .secondary-control,
+    body.presentation .selector-toolbar .segmented,
+    body.presentation .selector-toolbar .status-pill:not(.presentation-visible),
+    body.presentation #messageLine:empty {
+      display: none !important;
+    }
+
+    body.presentation .workspace {
+      grid-template-columns: minmax(0, 1fr);
+      padding: clamp(10px, 1.4vw, 18px);
+    }
+
+    body.presentation .topbar {
+      justify-content: center;
+      text-align: center;
+      padding-bottom: 10px;
+    }
+
+    body.presentation .top-actions {
+      position: absolute;
+      right: 16px;
+      top: 16px;
+    }
+
+    body.presentation .topbar h2 {
+      font-size: clamp(2rem, 4.2vw, 5.2rem);
+    }
+
+    body.presentation .topbar p {
+      font-size: clamp(1rem, 1.4vw, 1.35rem);
+    }
+
+    body.presentation .selector-card {
+      padding: clamp(12px, 1.4vw, 20px);
+    }
+
+    body.presentation .wheel-wrap {
+      width: min(68vh, 62vw);
+      max-width: 800px;
+    }
+
+    body.presentation .selected-name {
+      font-size: clamp(3rem, 6vw, 7.8rem);
+    }
+
+    body.presentation .primary-button {
+      min-width: 170px;
+      min-height: 68px;
+      font-size: 1.55rem;
+    }
+
+    @media (max-width: 1050px) {
+      .shell {
+        grid-template-columns: 170px minmax(0, 1fr);
+      }
+
+      .workspace {
+        grid-template-columns: minmax(0, 1fr) 310px;
+      }
+
+      .student-row {
+        grid-template-columns: 1fr 1fr 60px;
+      }
+
+      .student-row .notes-cell,
+      .student-row .row-count,
+      .student-row .absent-cell {
+        display: none;
+      }
+    }
+
+    @media (max-width: 760px) {
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        height: auto;
+        min-height: 100%;
+        padding-bottom: 38px;
+      }
+
+      .shell,
+      .workspace,
+      .setup-options,
+      .setup-controls {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar,
+      .main,
+      .side-tools {
+        min-height: auto;
+      }
+
+      .class-nav {
+        max-height: 220px;
+      }
+
+      .wheel-wrap {
+        width: min(86vw, 58vh);
+        min-width: 250px;
+      }
+
+      .result-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="shell">
+      <aside class="sidebar" aria-label="Class and training navigation">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">BT</div>
+          <div>
+            <h1>Behaviour Training App with Random Student Selector</h1>
+            <p>Cold calling student selector for live classroom practice.</p>
+          </div>
+        </div>
+
+        <nav class="class-nav" id="classNav" aria-label="Classes"></nav>
+
+        <div class="sidebar-actions">
+          <button class="ghost-button" type="button" id="addClassButton">Add class</button>
+          <button class="ghost-button" type="button" id="renameClassButton">Rename class</button>
+          <button class="danger-button" type="button" id="deleteClassButton">Delete class</button>
+          <button class="soft-button" type="button" id="setupButton">Setup options</button>
+          <p class="advisory">Data is stored locally in this browser and may be lost if cache is cleared or device is changed.</p>
+        </div>
+      </aside>
+
+      <main class="main" aria-live="polite">
+        <header class="topbar">
+          <div>
+            <h2 id="classTitle">Temporary Class</h2>
+            <p id="classSubtitle">Ready for a quick classroom spin.</p>
+          </div>
+          <div class="top-actions">
+            <button class="soft-button" type="button" id="presentationButton" title="Keyboard shortcut: P">Presentation</button>
+          </div>
+        </header>
+
+        <div class="workspace" id="mainWorkspace">
+          <section class="selector-card" aria-label="Random student selector">
+            <div class="selector-toolbar">
+              <div class="quick-grid">
+                <span class="status-pill presentation-visible"><strong id="selectableCount">0</strong> selectable</span>
+                <span class="status-pill"><strong id="totalCount">0</strong> total</span>
+                <span class="status-pill" id="modeBadge">Wheel</span>
+              </div>
+              <div class="segmented" aria-label="Spin speed">
+                <button class="mode-chip" type="button" data-speed="slow">Slow</button>
+                <button class="mode-chip is-active" type="button" data-speed="normal">Normal</button>
+                <button class="mode-chip" type="button" data-speed="fast">Fast</button>
+              </div>
+            </div>
+
+            <div class="stage">
+              <div class="wheel-wrap" id="wheelWrap">
+                <div class="pointer" aria-hidden="true"></div>
+                <canvas id="wheelCanvas" width="900" height="900" aria-label="Student selector wheel"></canvas>
+                <div class="wheel-ring" aria-hidden="true"></div>
+                <div class="wheel-hub" aria-hidden="true">SPIN</div>
+              </div>
+
+              <div class="tombola-wrap" id="tombolaWrap">
+                <div class="tombola-window">
+                  <div class="tombola-target-line" aria-hidden="true"></div>
+                  <div class="tombola-reel" id="tombolaReel"></div>
+                </div>
+                <span class="status-pill">Tombola mode for large classes</span>
+              </div>
+
+              <div class="result-panel">
+                <div>
+                  <div class="selected-label">Selected student</div>
+                  <div class="selected-name" id="selectedName">Ready</div>
+                  <div class="message" id="messageLine"></div>
+                </div>
+                <div class="button-row">
+                  <button class="primary-button" type="button" id="spinButton" title="Keyboard shortcut: Space">Spin</button>
+                  <button class="soft-button secondary-control" type="button" id="markAbsentButton">Mark absent</button>
+                  <button class="soft-button secondary-control" type="button" id="quickResetButton" title="Keyboard shortcut: R">Quick reset</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <aside class="side-tools" aria-label="Class editing tools">
+            <div class="tabs" role="tablist" aria-label="Editor tabs">
+              <button class="tool-tab is-active" type="button" data-tool="students">Students</button>
+            </div>
+
+            <div class="panel-scroll">
+              <section class="tool-section is-active" id="tool-students">
+                <div class="panel-block">
+                  <h3>Import students</h3>
+                  <p>Paste names from your register. One name per line is perfect; Excel columns for First Name, Surname, Weighting, and Notes also work.</p>
+                  <textarea id="importText" spellcheck="false" placeholder="Aisha Khan&#10;Ben Taylor&#10;Cara Patel"></textarea>
+                  <div class="button-row">
+                    <button class="soft-button" type="button" id="appendImportButton">Append</button>
+                    <button class="soft-button" type="button" id="replaceImportButton">Replace</button>
+                  </div>
+                </div>
+
+                <div class="panel-block">
+                  <div class="button-row">
+                    <h3 style="margin-right:auto">Student list</h3>
+                    <button class="small-button" type="button" id="addStudentButton">Add student</button>
+                  </div>
+                  <div class="student-list" id="studentList"></div>
+                </div>
+              </section>
+            </div>
+          </aside>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="setupModal" role="dialog" aria-modal="true" aria-labelledby="setupTitle">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <h2 id="setupTitle">How would you like to use the app?</h2>
+          <p>Choose a classroom setup. Mixed Mode is the default because it gives you saved classes and a fast temporary class.</p>
+        </div>
+        <button class="ghost-button hidden" type="button" id="closeSetupButton">Close</button>
+      </div>
+
+      <div class="setup-options" id="setupOptions">
+        <div class="setup-card" data-setup-mode="quick">
+          <strong>Quick Temporary Mode</strong>
+          <span>Enter a number only. The app creates Student 1, Student 2 and so on.</span>
+        </div>
+        <div class="setup-card" data-setup-mode="saved">
+          <strong>Saved Class Mode</strong>
+          <span>Create class groups in the sidebar, then import or add named students.</span>
+        </div>
+        <div class="setup-card is-active" data-setup-mode="mixed">
+          <strong>Mixed Mode</strong>
+          <span>Saved classes plus a temporary class option for no-friction starts.</span>
+        </div>
+      </div>
+
+      <div class="setup-controls">
+        <div class="panel-block">
+          <h3>Temporary class</h3>
+          <label>Number of students
+            <input id="setupStudentCount" type="number" min="1" max="300" step="1" value="30">
+          </label>
+        </div>
+        <div class="panel-block">
+          <h3>Saved classes</h3>
+          <label>Number of classes
+            <select id="setupClassPreset">
+              <option value="1">1 class</option>
+              <option value="3" selected>3 classes</option>
+              <option value="5">5 classes</option>
+              <option value="10">10 classes</option>
+              <option value="custom">Custom</option>
+            </select>
+          </label>
+          <label id="customClassCountWrap" class="hidden">Custom amount
+            <input id="setupCustomClassCount" type="number" min="1" max="50" step="1" value="4">
+          </label>
+        </div>
+      </div>
+
+      <div class="button-row" style="justify-content:flex-end;margin-top:16px">
+        <button class="primary-button" type="button" id="startSetupButton">Start</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="classModal" role="dialog" aria-modal="true" aria-labelledby="classModalTitle">
+    <div class="modal-card class-dialog">
+      <div class="modal-head">
+        <div>
+          <h2 id="classModalTitle">Class</h2>
+          <p id="classModalText">Update your class list.</p>
+        </div>
+      </div>
+      <label id="classNameWrap">Class name
+        <input id="classNameInput" type="text" autocomplete="off">
+      </label>
+      <div class="button-row" style="justify-content:flex-end;margin-top:16px">
+        <button class="ghost-button" type="button" id="classCancelButton">Cancel</button>
+        <button class="primary-button" type="button" id="classConfirmButton">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">Created by John Spurling</footer>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const STORAGE_KEY = "behaviourTrainingApp.v1";
+      const MAX_WHEEL_STUDENTS = 32;
+      const TWO_PI = Math.PI * 2;
+      const SPEEDS = {
+        slow: { duration: 3900, turns: 7 },
+        normal: { duration: 2900, turns: 6 },
+        fast: { duration: 1900, turns: 4 }
+      };
+      const COLORS = [
+        ["#3df2e6", "#47a6ff"],
+        ["#47a6ff", "#8f65ff"],
+        ["#8f65ff", "#ff72cb"],
+        ["#ff72cb", "#3df2e6"],
+        ["#2bd6ff", "#b866ff"],
+        ["#64ffc9", "#6688ff"]
+      ];
+
+      const app = {
+        setupComplete: false,
+        setupMode: "mixed",
+        classes: [],
+        activeClassId: "temp",
+        tempClass: makeClass("temp", "Temporary Class", true),
+        settings: {
+          speed: "normal",
+          preventRepeats: true,
+          excludeLast: 1,
+          sound: false,
+          presentation: false
+        },
+        selectedStudentId: null,
+        selectionHistory: [],
+        spinning: false,
+        wheelRotation: 0,
+        currentTool: "students",
+        setupDraftMode: "mixed",
+        classAction: null
+      };
+
+      const els = {};
+      const $ = (selector) => document.querySelector(selector);
+      const $$ = (selector) => Array.from(document.querySelectorAll(selector));
+
+      document.addEventListener("DOMContentLoaded", () => {
+        cacheElements();
+        bindEvents();
+        loadState();
+        resizeWheel();
+        render();
+        if (!app.setupComplete) openSetup(false);
+        window.addEventListener("resize", debounce(() => {
+          resizeWheel();
+          drawWheel();
+        }, 120));
+      });
+
+      function cacheElements() {
+        [
+          "classNav", "addClassButton", "renameClassButton", "deleteClassButton", "setupButton",
+          "classTitle", "classSubtitle", "presentationButton", "selectableCount", "totalCount",
+          "modeBadge", "wheelWrap", "wheelCanvas", "tombolaWrap", "tombolaReel", "selectedName",
+          "messageLine", "spinButton", "markAbsentButton", "quickResetButton", "temporaryControls",
+          "temporaryCount", "generateTemporaryButton", "saveTemporaryButton", "importText",
+          "appendImportButton", "replaceImportButton", "addStudentButton", "studentList", "preventRepeatsInput",
+          "excludeLastInput", "soundInput", "resetCountsButton", "clearAbsencesButton",
+          "resetSessionButton", "exportButton", "importButton", "importFile", "fullResetButton",
+          "rerunSetupButton", "setupModal", "closeSetupButton", "setupOptions", "setupStudentCount",
+          "setupClassPreset", "customClassCountWrap", "setupCustomClassCount", "startSetupButton",
+          "classModal", "classModalTitle", "classModalText", "classNameWrap", "classNameInput",
+          "classCancelButton", "classConfirmButton"
+        ].forEach((id) => {
+          els[id] = document.getElementById(id);
+        });
+        els.toolTabs = $$(".tool-tab");
+        els.speedButtons = $$("[data-speed]");
+        els.setupCards = $$(".setup-card");
+      }
+
+      function bindEvents() {
+        els.addClassButton.addEventListener("click", () => openClassModal("add"));
+        els.renameClassButton.addEventListener("click", () => openClassModal("rename"));
+        els.deleteClassButton.addEventListener("click", () => openClassModal("delete"));
+        els.setupButton.addEventListener("click", () => openSetup(true));
+        if (els.rerunSetupButton) els.rerunSetupButton.addEventListener("click", () => openSetup(true));
+        els.presentationButton.addEventListener("click", togglePresentation);
+        els.spinButton.addEventListener("click", spin);
+        els.markAbsentButton.addEventListener("click", markSelectedAbsent);
+        els.quickResetButton.addEventListener("click", quickReset);
+        if (els.generateTemporaryButton) els.generateTemporaryButton.addEventListener("click", generateTemporaryFromInput);
+        if (els.saveTemporaryButton) els.saveTemporaryButton.addEventListener("click", saveTemporaryAsClass);
+        els.appendImportButton.addEventListener("click", () => importStudents(false));
+        els.replaceImportButton.addEventListener("click", () => importStudents(true));
+        els.addStudentButton.addEventListener("click", addStudent);
+        if (els.resetCountsButton) els.resetCountsButton.addEventListener("click", resetCounts);
+        if (els.clearAbsencesButton) els.clearAbsencesButton.addEventListener("click", clearAbsences);
+        if (els.resetSessionButton) els.resetSessionButton.addEventListener("click", quickReset);
+        if (els.exportButton) els.exportButton.addEventListener("click", exportData);
+        if (els.importButton) els.importButton.addEventListener("click", () => els.importFile.click());
+        if (els.importFile) els.importFile.addEventListener("change", importDataFile);
+        if (els.fullResetButton) els.fullResetButton.addEventListener("click", fullReset);
+        els.closeSetupButton.addEventListener("click", closeSetup);
+        els.startSetupButton.addEventListener("click", applySetup);
+        els.classCancelButton.addEventListener("click", closeClassModal);
+        els.classConfirmButton.addEventListener("click", confirmClassAction);
+        els.classNameInput.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") confirmClassAction();
+          if (event.key === "Escape") closeClassModal();
+        });
+
+        els.toolTabs.forEach((button) => {
+          button.addEventListener("click", () => {
+            app.currentTool = button.dataset.tool;
+            renderTools();
+          });
+        });
+
+        els.speedButtons.forEach((button) => {
+          button.addEventListener("click", () => {
+            app.settings.speed = button.dataset.speed;
+            saveState();
+            renderSettings();
+          });
+        });
+
+        els.setupCards.forEach((card) => {
+          card.addEventListener("click", () => {
+            app.setupDraftMode = card.dataset.setupMode;
+            renderSetupCards();
+          });
+        });
+
+        els.setupClassPreset.addEventListener("change", () => {
+          els.customClassCountWrap.classList.toggle("hidden", els.setupClassPreset.value !== "custom");
+        });
+
+        if (els.preventRepeatsInput) {
+          els.preventRepeatsInput.addEventListener("change", () => {
+            app.settings.preventRepeats = els.preventRepeatsInput.checked;
+            saveState();
+          });
+        }
+
+        if (els.excludeLastInput) {
+          els.excludeLastInput.addEventListener("input", () => {
+            app.settings.excludeLast = clamp(toInteger(els.excludeLastInput.value, 0), 0, 50);
+            saveState();
+          });
+        }
+
+        if (els.soundInput) {
+          els.soundInput.addEventListener("change", () => {
+            app.settings.sound = els.soundInput.checked;
+            saveState();
+          });
+        }
+
+        document.addEventListener("keydown", (event) => {
+          if (event.repeat || isTypingTarget(event.target)) return;
+          if (event.code === "Space") {
+            event.preventDefault();
+            spin();
+          } else if (event.key.toLowerCase() === "r") {
+            quickReset();
+          } else if (event.key.toLowerCase() === "p") {
+            togglePresentation();
+          }
+        });
+      }
+
+      function makeClass(id, name, temporary = false) {
+        return { id, name, temporary, students: [] };
+      }
+
+      function makeStudent(firstName = "", surname = "", weighting = 1, notes = "") {
+        return {
+          id: uniqueId("student"),
+          firstName: cleanText(firstName),
+          surname: cleanText(surname),
+          weighting: normaliseWeight(weighting),
+          notes: cleanText(notes),
+          count: 0,
+          absent: false
+        };
+      }
+
+      function loadState() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+          if (!saved || typeof saved !== "object") return;
+          app.setupComplete = Boolean(saved.setupComplete);
+          app.setupMode = ["quick", "saved", "mixed"].includes(saved.setupMode) ? saved.setupMode : "mixed";
+          app.setupDraftMode = app.setupMode;
+          app.classes = Array.isArray(saved.classes) ? saved.classes.map(hydrateClass).filter(Boolean) : [];
+          app.activeClassId = typeof saved.activeClassId === "string" ? saved.activeClassId : pickInitialActiveId();
+          app.settings = { ...app.settings, ...(saved.settings || {}) };
+          app.settings.speed = SPEEDS[app.settings.speed] ? app.settings.speed : "normal";
+          app.settings.excludeLast = clamp(toInteger(app.settings.excludeLast, 1), 0, 50);
+          app.settings.preventRepeats = Boolean(app.settings.preventRepeats);
+          app.settings.sound = Boolean(app.settings.sound);
+          app.settings.presentation = Boolean(app.settings.presentation);
+          if (!allowsTemporary() && app.activeClassId === "temp") app.activeClassId = app.classes[0]?.id || "temp";
+          if (allowsTemporary() && !app.tempClass.students.length) {
+            app.tempClass.students = [];
+          }
+        } catch (error) {
+          console.warn("Could not load app state", error);
+        }
+      }
+
+      function hydrateClass(value) {
+        if (!value || typeof value !== "object") return null;
+        return {
+          id: typeof value.id === "string" ? value.id : uniqueId("class"),
+          name: cleanText(value.name || "Untitled Class"),
+          temporary: false,
+          students: Array.isArray(value.students) ? value.students.map(hydrateStudent).filter(Boolean) : []
+        };
+      }
+
+      function hydrateStudent(value) {
+        if (!value || typeof value !== "object") return null;
+        return {
+          id: typeof value.id === "string" ? value.id : uniqueId("student"),
+          firstName: cleanText(value.firstName || ""),
+          surname: cleanText(value.surname || ""),
+          weighting: normaliseWeight(value.weighting),
+          notes: cleanText(value.notes || ""),
+          count: clamp(toInteger(value.count, 0), 0, 9999),
+          absent: Boolean(value.absent)
+        };
+      }
+
+      function saveState() {
+        const activeClassId = app.activeClassId === "temp" ? (app.classes[0]?.id || "temp") : app.activeClassId;
+        const payload = {
+          setupComplete: app.setupComplete,
+          setupMode: app.setupMode,
+          classes: app.classes,
+          activeClassId,
+          settings: app.settings
+        };
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        } catch (error) {
+          setMessage("Local storage is full or unavailable. Export your data as a backup.");
+        }
+      }
+
+      function render() {
+        ensureActiveClass();
+        document.body.classList.toggle("presentation", app.settings.presentation);
+        renderClassNav();
+        renderHeader();
+        renderSettings();
+        renderTools();
+        renderStudents();
+        renderSelector();
+      }
+
+      function renderClassNav() {
+        const items = [];
+        if (allowsTemporary()) {
+          items.push(navButton(app.tempClass, "Temporary"));
+        }
+        if (app.classes.length) {
+          items.push(`<div class="nav-label">Saved classes</div>`);
+          app.classes.forEach((classItem) => items.push(navButton(classItem, `${classItem.students.length} students`)));
+        } else if (app.setupMode !== "quick") {
+          items.push(`<div class="empty-state">No saved classes yet.</div>`);
+        }
+        items.push(`<div class="nav-label">Training tabs</div>`);
+        items.push(`<button class="class-button" type="button" data-coming-soon="true"><span class="class-name">Signal, Pause, Insist Training</span><span class="class-meta">Coming Soon</span></button>`);
+        els.classNav.innerHTML = items.join("");
+        $$("[data-class-id]").forEach((button) => {
+          button.addEventListener("click", () => {
+            app.activeClassId = button.dataset.classId;
+            app.selectedStudentId = null;
+            setMessage("");
+            saveState();
+            render();
+          });
+        });
+        $$("[data-coming-soon]").forEach((button) => {
+          button.addEventListener("click", () => {
+            setMessage("Signal, Pause, Insist Training is coming soon.");
+          });
+        });
+      }
+
+      function navButton(classItem, meta) {
+        const isActive = app.activeClassId === classItem.id;
+        const selectable = getSelectableBase(classItem).length;
+        const countLabel = classItem.temporary ? `${classItem.students.length} students` : meta;
+        return `
+          <button class="class-button ${isActive ? "is-active" : ""}" type="button" data-class-id="${escapeAttr(classItem.id)}">
+            <span class="class-name">${escapeHtml(classItem.name)}</span>
+            <span class="class-meta">${selectable}/${countLabel}</span>
+          </button>
+        `;
+      }
+
+      function renderHeader() {
+        const classItem = getActiveClass();
+        const total = classItem.students.length;
+        const selectable = getSelectableBase(classItem).length;
+        els.classTitle.textContent = classItem.name;
+        els.classSubtitle.textContent = classItem.temporary
+          ? "Paste the students who are here today, then spin."
+          : `${total} students, ${selectable} currently selectable.`;
+        els.selectableCount.textContent = selectable;
+        els.totalCount.textContent = total;
+        els.renameClassButton.disabled = classItem.temporary;
+        els.deleteClassButton.disabled = classItem.temporary;
+        els.markAbsentButton.disabled = !app.selectedStudentId;
+        els.spinButton.textContent = app.selectedStudentId ? "Spin again" : "Spin";
+        els.presentationButton.classList.toggle("is-active", app.settings.presentation);
+        els.presentationButton.textContent = app.settings.presentation ? "Exit presentation" : "Presentation";
+        if (els.temporaryControls) els.temporaryControls.classList.toggle("hidden", !classItem.temporary);
+      }
+
+      function renderSettings() {
+        els.speedButtons.forEach((button) => {
+          button.classList.toggle("is-active", button.dataset.speed === app.settings.speed);
+        });
+        if (els.preventRepeatsInput) els.preventRepeatsInput.checked = app.settings.preventRepeats;
+        if (els.excludeLastInput) els.excludeLastInput.value = app.settings.excludeLast;
+        if (els.soundInput) els.soundInput.checked = app.settings.sound;
+      }
+
+      function renderTools() {
+        els.toolTabs.forEach((button) => {
+          button.classList.toggle("is-active", button.dataset.tool === app.currentTool);
+        });
+        $$(".tool-section").forEach((section) => section.classList.remove("is-active"));
+        const active = document.getElementById(`tool-${app.currentTool}`);
+        if (active) active.classList.add("is-active");
+      }
+
+      function renderStudents() {
+        const classItem = getActiveClass();
+        if (!classItem.students.length) {
+          els.studentList.innerHTML = `
+            <div class="empty-state">
+              <strong>No students yet</strong>
+              <span>Paste a list of names or add students manually.</span>
+            </div>
+          `;
+          return;
+        }
+
+        els.studentList.innerHTML = classItem.students.map((student) => {
+          const muted = student.weighting <= 0 || student.absent;
+          return `
+            <div class="student-row ${muted ? "is-muted" : ""}" data-student-id="${escapeAttr(student.id)}">
+              <input aria-label="First name" data-field="firstName" value="${escapeAttr(student.firstName)}" placeholder="First">
+              <input aria-label="Surname" data-field="surname" value="${escapeAttr(student.surname)}" placeholder="Surname">
+              <select aria-label="Weighting" data-field="weighting">
+                ${[0, 0.5, 1, 2].map((weight) => `<option value="${weight}" ${Number(student.weighting) === weight ? "selected" : ""}>${weight}</option>`).join("")}
+              </select>
+              <input class="notes-cell" aria-label="Notes" data-field="notes" value="${escapeAttr(student.notes)}" placeholder="Notes">
+              <label class="toggle-row absent-cell" title="Temporarily exclude from selection">Absent
+                <input type="checkbox" data-field="absent" ${student.absent ? "checked" : ""}>
+              </label>
+              <span class="row-count" title="Selection count">${student.count}</span>
+              <button class="icon-button" type="button" data-remove-student="${escapeAttr(student.id)}" title="Remove student">x</button>
+            </div>
+          `;
+        }).join("");
+
+        els.studentList.querySelectorAll("[data-field]").forEach((input) => {
+          input.addEventListener("input", handleStudentEdit);
+          input.addEventListener("change", handleStudentEdit);
+        });
+        els.studentList.querySelectorAll("[data-remove-student]").forEach((button) => {
+          button.addEventListener("click", () => removeStudent(button.dataset.removeStudent));
+        });
+      }
+
+      function renderSelector() {
+        const classItem = getActiveClass();
+        const useTombola = classItem.students.length > MAX_WHEEL_STUDENTS;
+        els.modeBadge.textContent = useTombola ? "Tombola" : "Wheel";
+        els.wheelWrap.style.display = useTombola ? "none" : "grid";
+        els.tombolaWrap.style.display = useTombola ? "grid" : "none";
+        if (!app.selectedStudentId) {
+          els.selectedName.textContent = classItem.students.length ? "Ready" : "Add students";
+        }
+        if (useTombola) renderTombolaIdle();
+        drawWheel();
+        renderHeader();
+      }
+
+      function drawWheel(rotation = app.wheelRotation) {
+        const canvas = els.wheelCanvas;
+        const context = canvas.getContext("2d");
+        const classItem = getActiveClass();
+        const students = classItem.students;
+        const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+        const size = Math.max(420, Math.floor(canvas.getBoundingClientRect().width || 900));
+        canvas.width = size * dpr;
+        canvas.height = size * dpr;
+        context.setTransform(dpr, 0, 0, dpr, 0, 0);
+        context.clearRect(0, 0, size, size);
+
+        const center = size / 2;
+        const radius = center * 0.94;
+        context.save();
+        context.translate(center, center);
+
+        if (!students.length) {
+          context.beginPath();
+          context.arc(0, 0, radius, 0, TWO_PI);
+          context.fillStyle = "rgba(255, 255, 255, 0.08)";
+          context.fill();
+          context.strokeStyle = "rgba(255, 255, 255, 0.25)";
+          context.lineWidth = 3;
+          context.stroke();
+          context.fillStyle = "#f7fbff";
+          context.font = `900 ${Math.max(20, size * 0.045)}px sans-serif`;
+          context.textAlign = "center";
+          context.textBaseline = "middle";
+          context.fillText("Add students", 0, 0);
+          context.restore();
+          return;
+        }
+
+        const segment = TWO_PI / students.length;
+        students.forEach((student, index) => {
+          const start = rotation - Math.PI / 2 + index * segment;
+          const end = start + segment;
+          const palette = COLORS[index % COLORS.length];
+          const gradient = context.createLinearGradient(-radius, -radius, radius, radius);
+          gradient.addColorStop(0, palette[0]);
+          gradient.addColorStop(1, palette[1]);
+          context.beginPath();
+          context.moveTo(0, 0);
+          context.arc(0, 0, radius, start, end);
+          context.closePath();
+          context.globalAlpha = student.weighting <= 0 || student.absent ? 0.36 : 0.94;
+          context.fillStyle = gradient;
+          context.fill();
+          context.globalAlpha = 1;
+          context.strokeStyle = "rgba(255, 255, 255, 0.58)";
+          context.lineWidth = Math.max(1, size * 0.002);
+          context.stroke();
+
+          if (student.weighting <= 0 || student.absent) {
+            context.save();
+            context.rotate(start + segment / 2);
+            context.strokeStyle = "rgba(8, 11, 24, 0.72)";
+            context.lineWidth = Math.max(3, size * 0.006);
+            context.beginPath();
+            context.moveTo(radius * 0.18, 0);
+            context.lineTo(radius * 0.9, 0);
+            context.stroke();
+            context.restore();
+          }
+
+          drawSegmentLabel(context, student, start + segment / 2, segment, radius, size);
+        });
+
+        context.beginPath();
+        context.arc(0, 0, radius, 0, TWO_PI);
+        context.strokeStyle = "rgba(255, 255, 255, 0.8)";
+        context.lineWidth = Math.max(2, size * 0.006);
+        context.stroke();
+        context.restore();
+      }
+
+      function drawSegmentLabel(context, student, angle, segment, radius, size) {
+        const name = displayName(student);
+        const availableArc = radius * segment * 0.72;
+        const fontSize = clamp(Math.floor(availableArc * 0.34), 9, Math.max(13, Math.floor(size * 0.036)));
+        const text = truncateForCanvas(context, name, radius * 0.58, `900 ${fontSize}px sans-serif`);
+        context.save();
+        context.rotate(angle);
+        context.textAlign = "right";
+        context.textBaseline = "middle";
+        context.font = `900 ${fontSize}px sans-serif`;
+        context.fillStyle = "#ffffff";
+        context.shadowColor = "rgba(0, 0, 0, 0.72)";
+        context.shadowBlur = 5;
+        context.lineWidth = 3;
+        context.strokeStyle = "rgba(0, 0, 0, 0.34)";
+        context.strokeText(text, radius * 0.88, 0);
+        context.fillText(text, radius * 0.88, 0);
+        context.restore();
+      }
+
+      function renderTombolaIdle() {
+        const classItem = getActiveClass();
+        const rows = classItem.students.slice(0, 14);
+        els.tombolaReel.style.transition = "none";
+        els.tombolaReel.style.transform = "translateY(0)";
+        els.tombolaReel.innerHTML = rows.map((student) => `
+          <div class="tombola-row ${student.weighting <= 0 || student.absent ? "is-muted" : ""}">${escapeHtml(displayName(student))}</div>
+        `).join("") || `<div class="tombola-row">Add students</div>`;
+      }
+
+      function spin() {
+        if (app.spinning) return;
+        const classItem = getActiveClass();
+        const selection = pickWeightedStudent(classItem);
+        if (!selection.student) {
+          setMessage(selection.message || "No selectable students available");
+          els.selectedName.textContent = "No selection";
+          return;
+        }
+        app.spinning = true;
+        els.spinButton.disabled = true;
+        setMessage("");
+        if (app.settings.sound) playTick();
+
+        const useTombola = classItem.students.length > MAX_WHEEL_STUDENTS;
+        if (useTombola) {
+          animateTombola(selection.student);
+        } else {
+          animateWheel(selection.student);
+        }
+      }
+
+      function animateWheel(student) {
+        const classItem = getActiveClass();
+        const index = classItem.students.findIndex((item) => item.id === student.id);
+        const segment = TWO_PI / Math.max(1, classItem.students.length);
+        const speed = SPEEDS[app.settings.speed] || SPEEDS.normal;
+        const current = positiveModulo(app.wheelRotation, TWO_PI);
+        const targetBase = positiveModulo(-(index + 0.5) * segment, TWO_PI);
+        const delta = positiveModulo(targetBase - current, TWO_PI);
+        const finalRotation = app.wheelRotation + speed.turns * TWO_PI + delta;
+        const startRotation = app.wheelRotation;
+        const startTime = performance.now();
+
+        function frame(now) {
+          const progress = clamp((now - startTime) / speed.duration, 0, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          app.wheelRotation = startRotation + (finalRotation - startRotation) * eased;
+          drawWheel(app.wheelRotation);
+          if (progress < 1) {
+            requestAnimationFrame(frame);
+          } else {
+            app.wheelRotation = positiveModulo(finalRotation, TWO_PI);
+            drawWheel();
+            finishSelection(student);
+          }
+        }
+
+        requestAnimationFrame(frame);
+      }
+
+      function animateTombola(student) {
+        const classItem = getActiveClass();
+        const speed = SPEEDS[app.settings.speed] || SPEEDS.normal;
+        const active = classItem.students.length ? classItem.students : [student];
+        const rows = [];
+        const totalRows = 48;
+        for (let index = 0; index < totalRows; index += 1) {
+          rows.push(active[Math.floor(Math.random() * active.length)]);
+        }
+        rows.push(student);
+        els.tombolaReel.style.transition = "none";
+        els.tombolaReel.style.transform = "translateY(0)";
+        els.tombolaReel.innerHTML = rows.map((item, index) => `
+          <div class="tombola-row ${item.weighting <= 0 || item.absent ? "is-muted" : ""} ${index === rows.length - 1 ? "is-winner" : ""}">
+            ${escapeHtml(displayName(item))}
+          </div>
+        `).join("");
+
+        requestAnimationFrame(() => {
+          const rowHeight = 64;
+          const windowHeight = els.tombolaWrap.querySelector(".tombola-window").getBoundingClientRect().height || 360;
+          const offset = (rows.length - 1) * rowHeight - (windowHeight / 2) + (rowHeight / 2) + 10;
+          els.tombolaReel.style.transition = `transform ${speed.duration}ms cubic-bezier(.08,.72,.12,1)`;
+          els.tombolaReel.style.transform = `translateY(-${offset}px)`;
+          window.setTimeout(() => finishSelection(student), speed.duration + 80);
+        });
+      }
+
+      function finishSelection(student) {
+        const classItem = getActiveClass();
+        const target = classItem.students.find((item) => item.id === student.id);
+        if (target) {
+          target.count = clamp(toInteger(target.count, 0) + 1, 0, 9999);
+          app.selectedStudentId = target.id;
+          app.selectionHistory.push(target.id);
+          app.selectionHistory = app.selectionHistory.slice(-80);
+          els.selectedName.textContent = displayName(target);
+          setMessage(`${displayName(target)} has been selected ${target.count} time${target.count === 1 ? "" : "s"}.`);
+          if (app.settings.sound) playChime();
+        }
+        app.spinning = false;
+        els.spinButton.disabled = false;
+        saveState();
+        render();
+      }
+
+      function pickWeightedStudent(classItem) {
+        const base = getSelectableBase(classItem);
+        if (!base.length) return { student: null, message: "No selectable students available" };
+
+        const guardCount = Math.max(app.settings.preventRepeats ? 1 : 0, clamp(toInteger(app.settings.excludeLast, 0), 0, 50));
+        const blocked = new Set(app.selectionHistory.slice(-guardCount));
+        let candidates = guardCount > 0 ? base.filter((student) => !blocked.has(student.id)) : base;
+        if (!candidates.length) {
+          candidates = base;
+          setMessage("Repeat guard paused because every selectable student was recently chosen.");
+        }
+
+        const total = candidates.reduce((sum, student) => sum + normaliseWeight(student.weighting), 0);
+        if (total <= 0) return { student: null, message: "No selectable students available" };
+        let roll = Math.random() * total;
+        for (const student of candidates) {
+          roll -= normaliseWeight(student.weighting);
+          if (roll <= 0) return { student };
+        }
+        return { student: candidates[candidates.length - 1] };
+      }
+
+      function getSelectableBase(classItem = getActiveClass()) {
+        return classItem.students.filter((student) => normaliseWeight(student.weighting) > 0 && !student.absent);
+      }
+
+      function getActiveClass() {
+        if (app.activeClassId === "temp" && allowsTemporary()) return app.tempClass;
+        return app.classes.find((classItem) => classItem.id === app.activeClassId) || app.classes[0] || app.tempClass;
+      }
+
+      function ensureActiveClass() {
+        if (app.activeClassId === "temp" && allowsTemporary()) return;
+        if (app.classes.some((classItem) => classItem.id === app.activeClassId)) return;
+        app.activeClassId = allowsTemporary() ? "temp" : (app.classes[0]?.id || "temp");
+      }
+
+      function allowsTemporary() {
+        return app.setupMode === "quick" || app.setupMode === "mixed";
+      }
+
+      function openClassModal(action) {
+        const classItem = getActiveClass();
+        if ((action === "rename" || action === "delete") && classItem.temporary) {
+          setMessage("Select a saved class first.");
+          return;
+        }
+        app.classAction = action;
+        els.classConfirmButton.classList.remove("danger-button");
+        els.classConfirmButton.classList.add("primary-button");
+        els.classNameWrap.classList.toggle("hidden", action === "delete");
+
+        if (action === "add") {
+          els.classModalTitle.textContent = "Add class";
+          els.classModalText.textContent = "Create a new class tab in the sidebar.";
+          els.classNameInput.value = `Class ${app.classes.length + 1}`;
+          els.classConfirmButton.textContent = "Add class";
+        } else if (action === "rename") {
+          els.classModalTitle.textContent = "Rename class";
+          els.classModalText.textContent = "Update the name shown in the sidebar.";
+          els.classNameInput.value = classItem.name;
+          els.classConfirmButton.textContent = "Rename";
+        } else {
+          els.classModalTitle.textContent = "Delete class";
+          els.classModalText.textContent = `Delete ${classItem.name}? Student data in this class will be removed.`;
+          els.classNameInput.value = "";
+          els.classConfirmButton.textContent = "Delete";
+          els.classConfirmButton.classList.remove("primary-button");
+          els.classConfirmButton.classList.add("danger-button");
+        }
+
+        els.classModal.classList.add("is-open");
+        window.setTimeout(() => {
+          if (action !== "delete") {
+            els.classNameInput.focus();
+            els.classNameInput.select();
+          } else {
+            els.classConfirmButton.focus();
+          }
+        }, 30);
+      }
+
+      function closeClassModal() {
+        app.classAction = null;
+        els.classModal.classList.remove("is-open");
+      }
+
+      function confirmClassAction() {
+        const action = app.classAction;
+        if (!action) return;
+        if (action === "add") {
+          const name = cleanText(els.classNameInput.value) || `Class ${app.classes.length + 1}`;
+          const classItem = makeClass(uniqueId("class"), name);
+          app.classes.push(classItem);
+          app.activeClassId = classItem.id;
+          app.selectedStudentId = null;
+          setMessage(`${classItem.name} added.`);
+        } else if (action === "rename") {
+          const classItem = getActiveClass();
+          const name = cleanText(els.classNameInput.value);
+          if (!name) {
+            setMessage("Class name cannot be blank.");
+            return;
+          }
+          classItem.name = name;
+          setMessage(`Class renamed to ${classItem.name}.`);
+        } else if (action === "delete") {
+          deleteActiveClass();
+          return;
+        }
+        closeClassModal();
+        saveState();
+        render();
+      }
+
+      function deleteActiveClass() {
+        const classItem = getActiveClass();
+        if (classItem.temporary) return;
+        app.classes = app.classes.filter((item) => item.id !== classItem.id);
+        app.activeClassId = allowsTemporary() ? "temp" : (app.classes[0]?.id || "temp");
+        app.selectedStudentId = null;
+        setMessage(`${classItem.name} deleted.`);
+        closeClassModal();
+        saveState();
+        render();
+      }
+
+      function generateTemporaryFromInput() {
+        const count = clamp(toInteger(els.temporaryCount.value, 30), 1, 300);
+        app.tempClass.students = generateNumberedStudents(count);
+        app.activeClassId = "temp";
+        app.selectedStudentId = null;
+        app.selectionHistory = [];
+        setMessage(`Temporary class generated with ${count} students.`);
+        render();
+      }
+
+      function generateNumberedStudents(count) {
+        return Array.from({ length: count }, (_, index) => makeStudent(`Student ${index + 1}`, "", 1, ""));
+      }
+
+      function saveTemporaryAsClass() {
+        if (!app.tempClass.students.length) {
+          setMessage("Generate or import temporary students before saving.");
+          return;
+        }
+        const name = prompt("Save temporary class as", "Saved Temporary Class");
+        if (!name) return;
+        const classItem = makeClass(uniqueId("class"), cleanText(name));
+        classItem.students = app.tempClass.students.map((student) => ({
+          ...student,
+          id: uniqueId("student"),
+          absent: false
+        }));
+        app.classes.push(classItem);
+        app.activeClassId = classItem.id;
+        app.selectedStudentId = null;
+        app.setupMode = app.setupMode === "quick" ? "mixed" : app.setupMode;
+        app.setupComplete = true;
+        saveState();
+        setMessage(`${classItem.name} saved.`);
+        render();
+      }
+
+      function importStudents(replace) {
+        const rows = parseStudents(els.importText.value);
+        if (!rows.length) {
+          setMessage("Paste at least one student before importing.");
+          return;
+        }
+        const classItem = getActiveClass();
+        if (replace) {
+          classItem.students = rows;
+          app.selectionHistory = [];
+          app.selectedStudentId = null;
+        } else {
+          classItem.students.push(...rows);
+        }
+        els.importText.value = "";
+        setMessage(`${rows.length} student${rows.length === 1 ? "" : "s"} imported.`);
+        saveState();
+        render();
+      }
+
+      function parseStudents(text) {
+        const trimmed = text.trim();
+        if (!trimmed) return [];
+        const lines = trimmed.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+        const rows = [];
+
+        lines.forEach((line) => {
+          let cells;
+          if (line.includes("\t")) {
+            cells = line.split("\t");
+          } else if (line.includes(",")) {
+            cells = splitCsvLine(line);
+          } else {
+            cells = [line];
+          }
+          cells = cells.map((cell) => cleanText(cell));
+          if (isHeaderRow(cells)) return;
+          if (isCommaNameList(line, cells)) {
+            for (const value of cells) {
+              if (value) rows.push(makeStudent(value));
+            }
+            return;
+          }
+          const [first = "", surname = "", weight = 1, ...noteParts] = cells;
+          if (!first && !surname) return;
+          rows.push(makeStudent(first, surname, weight, noteParts.join(" ")));
+        });
+
+        return rows;
+      }
+
+      function isHeaderRow(cells) {
+        return /^first\s*name$/i.test(cells[0] || "") && /^surname$/i.test(cells[1] || "");
+      }
+
+      function isCommaNameList(line, cells) {
+        if (line.includes("\t") || !line.includes(",") || cells.length <= 2) return false;
+        if (cells.length > 4) return true;
+        return cells.length === 3 && !isWeightValue(cells[2]);
+      }
+
+      function isWeightValue(value) {
+        return ["0", "0.5", "1", "2"].includes(String(value).trim());
+      }
+
+      function splitCsvLine(line) {
+        const cells = [];
+        let current = "";
+        let quoted = false;
+        for (let index = 0; index < line.length; index += 1) {
+          const char = line[index];
+          if (char === '"' && line[index + 1] === '"') {
+            current += '"';
+            index += 1;
+          } else if (char === '"') {
+            quoted = !quoted;
+          } else if (char === "," && !quoted) {
+            cells.push(current);
+            current = "";
+          } else {
+            current += char;
+          }
+        }
+        cells.push(current);
+        return cells;
+      }
+
+      function handleStudentEdit(event) {
+        const row = event.target.closest("[data-student-id]");
+        const student = findStudent(row.dataset.studentId);
+        if (!student) return;
+        const field = event.target.dataset.field;
+        if (field === "absent") {
+          student.absent = event.target.checked;
+        } else if (field === "weighting") {
+          student.weighting = normaliseWeight(event.target.value);
+        } else if (field === "count") {
+          student.count = clamp(toInteger(event.target.value, 0), 0, 9999);
+        } else {
+          student[field] = cleanText(event.target.value);
+        }
+        saveState();
+        renderHeader();
+        drawWheel();
+        renderSelector();
+      }
+
+      function addStudent() {
+        const classItem = getActiveClass();
+        classItem.students.push(makeStudent("New", "Student", 1, ""));
+        saveState();
+        render();
+      }
+
+      function removeStudent(id) {
+        const classItem = getActiveClass();
+        const student = classItem.students.find((item) => item.id === id);
+        if (!student) return;
+        classItem.students = classItem.students.filter((item) => item.id !== id);
+        app.selectionHistory = app.selectionHistory.filter((studentId) => studentId !== id);
+        if (app.selectedStudentId === id) app.selectedStudentId = null;
+        saveState();
+        render();
+      }
+
+      function resetCounts() {
+        getActiveClass().students.forEach((student) => {
+          student.count = 0;
+        });
+        app.selectionHistory = [];
+        app.selectedStudentId = null;
+        setMessage("Selection counts reset.");
+        saveState();
+        render();
+      }
+
+      function clearAbsences() {
+        getActiveClass().students.forEach((student) => {
+          student.absent = false;
+        });
+        setMessage("Absences cleared.");
+        saveState();
+        render();
+      }
+
+      function quickReset() {
+        getActiveClass().students.forEach((student) => {
+          student.count = 0;
+          student.absent = false;
+        });
+        app.selectionHistory = [];
+        app.selectedStudentId = null;
+        els.selectedName.textContent = "Ready";
+        setMessage("Quick reset complete.");
+        saveState();
+        render();
+      }
+
+      function markSelectedAbsent() {
+        const student = findStudent(app.selectedStudentId);
+        if (!student) {
+          setMessage("Spin first, then mark the selected student absent if needed.");
+          return;
+        }
+        student.absent = !student.absent;
+        setMessage(`${displayName(student)} is now marked ${student.absent ? "absent" : "present"}.`);
+        saveState();
+        render();
+      }
+
+      function exportData() {
+        const payload = {
+          exportedAt: new Date().toISOString(),
+          app: "Behaviour Training App with Random Student Selector",
+          version: 1,
+          setupMode: app.setupMode,
+          classes: app.classes,
+          settings: app.settings
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `behaviour-training-app-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        setMessage("Data exported.");
+      }
+
+      function importDataFile(event) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const data = JSON.parse(String(reader.result || "{}"));
+            const classes = Array.isArray(data.classes) ? data.classes.map(hydrateClass).filter(Boolean) : [];
+            if (!classes.length && !confirm("This file has no saved classes. Import anyway?")) return;
+            if (!confirm("Import this file and replace saved classes/settings?")) return;
+            app.classes = classes;
+            app.setupMode = ["quick", "saved", "mixed"].includes(data.setupMode) ? data.setupMode : "mixed";
+            app.setupDraftMode = app.setupMode;
+            app.settings = { ...app.settings, ...(data.settings || {}) };
+            app.setupComplete = true;
+            app.activeClassId = allowsTemporary() ? "temp" : (app.classes[0]?.id || "temp");
+            app.selectedStudentId = null;
+            app.selectionHistory = [];
+            saveState();
+            setMessage("Data imported.");
+            render();
+          } catch (error) {
+            setMessage("Could not import that JSON file.");
+          } finally {
+            els.importFile.value = "";
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      function fullReset() {
+        const phrase = prompt("Type RESET to clear all Behaviour Training App with Random Student Selector local data.");
+        if (phrase !== "RESET") return;
+        localStorage.clear();
+        app.setupComplete = false;
+        app.setupMode = "mixed";
+        app.setupDraftMode = "mixed";
+        app.classes = [];
+        app.activeClassId = "temp";
+        app.tempClass = makeClass("temp", "Temporary Class", true);
+        app.selectedStudentId = null;
+        app.selectionHistory = [];
+        app.settings = {
+          speed: "normal",
+          preventRepeats: true,
+          excludeLast: 1,
+          sound: false,
+          presentation: false
+        };
+        setMessage("");
+        render();
+        openSetup(false);
+      }
+
+      function openSetup(canClose) {
+        app.setupDraftMode = app.setupMode || "mixed";
+        renderSetupCards();
+        els.closeSetupButton.classList.toggle("hidden", !canClose);
+        els.setupModal.classList.add("is-open");
+      }
+
+      function closeSetup() {
+        els.setupModal.classList.remove("is-open");
+      }
+
+      function renderSetupCards() {
+        els.setupCards.forEach((card) => {
+          card.classList.toggle("is-active", card.dataset.setupMode === app.setupDraftMode);
+        });
+      }
+
+      function applySetup() {
+        const mode = app.setupDraftMode || "mixed";
+        const tempCount = clamp(toInteger(els.setupStudentCount.value, 30), 1, 300);
+        const classCount = getSetupClassCount();
+        if (app.setupComplete && (app.classes.length || app.tempClass.students.length)) {
+          const ok = confirm("Applying setup again will replace current class groups and temporary students. Continue?");
+          if (!ok) return;
+        }
+        app.setupMode = mode;
+        app.setupComplete = true;
+        app.selectedStudentId = null;
+        app.selectionHistory = [];
+        app.tempClass = makeClass("temp", "Temporary Class", true);
+        app.classes = [];
+
+        if (mode === "quick") {
+          app.tempClass.students = generateNumberedStudents(tempCount);
+          app.activeClassId = "temp";
+        } else {
+          app.classes = Array.from({ length: classCount }, (_, index) => makeClass(uniqueId("class"), `Class ${index + 1}`));
+          if (mode === "mixed") {
+            app.tempClass.students = generateNumberedStudents(tempCount);
+            app.activeClassId = "temp";
+          } else {
+            app.activeClassId = app.classes[0]?.id || "temp";
+          }
+        }
+
+        saveState();
+        closeSetup();
+        setMessage(mode === "quick" ? "Temporary class ready." : "Setup complete. Import or add students when you are ready.");
+        render();
+      }
+
+      function getSetupClassCount() {
+        if (els.setupClassPreset.value === "custom") {
+          return clamp(toInteger(els.setupCustomClassCount.value, 4), 1, 50);
+        }
+        return clamp(toInteger(els.setupClassPreset.value, 3), 1, 50);
+      }
+
+      function togglePresentation() {
+        app.settings.presentation = !app.settings.presentation;
+        saveState();
+        render();
+      }
+
+      function findStudent(id) {
+        if (!id) return null;
+        return getActiveClass().students.find((student) => student.id === id) || null;
+      }
+
+      function setMessage(message) {
+        els.messageLine.textContent = message || "";
+      }
+
+      function displayName(student) {
+        const name = `${student.firstName || ""} ${student.surname || ""}`.trim();
+        return name || "Unnamed Student";
+      }
+
+      function resizeWheel() {
+        const rect = els.wheelCanvas.getBoundingClientRect();
+        if (rect.width > 0) drawWheel();
+      }
+
+      function playTick() {
+        playTone(220, 0.045, "square", 0.025);
+      }
+
+      function playChime() {
+        playTone(523.25, 0.13, "sine", 0.055);
+        window.setTimeout(() => playTone(659.25, 0.12, "sine", 0.045), 90);
+      }
+
+      function playTone(frequency, duration, type, gainValue) {
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContext) return;
+          const audio = new AudioContext();
+          const oscillator = audio.createOscillator();
+          const gain = audio.createGain();
+          oscillator.type = type;
+          oscillator.frequency.value = frequency;
+          gain.gain.value = gainValue;
+          oscillator.connect(gain);
+          gain.connect(audio.destination);
+          oscillator.start();
+          oscillator.stop(audio.currentTime + duration);
+          oscillator.addEventListener("ended", () => audio.close());
+        } catch (error) {
+          console.warn("Audio unavailable", error);
+        }
+      }
+
+      function normaliseWeight(value) {
+        const number = Number.parseFloat(value);
+        if (!Number.isFinite(number)) return 1;
+        if (number <= 0) return 0;
+        if (number <= 0.5) return 0.5;
+        if (number <= 1.5) return 1;
+        return 2;
+      }
+
+      function toInteger(value, fallback) {
+        const number = Number.parseInt(value, 10);
+        return Number.isFinite(number) ? number : fallback;
+      }
+
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      function cleanText(value) {
+        return String(value ?? "").replace(/\s+/g, " ").trim();
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function escapeAttr(value) {
+        return escapeHtml(value);
+      }
+
+      function truncateForCanvas(context, text, maxWidth, font) {
+        context.font = font;
+        if (context.measureText(text).width <= maxWidth) return text;
+        let output = text;
+        while (output.length > 3 && context.measureText(`${output}...`).width > maxWidth) {
+          output = output.slice(0, -1);
+        }
+        return `${output}...`;
+      }
+
+      function uniqueId(prefix) {
+        if (window.crypto?.randomUUID) return `${prefix}-${window.crypto.randomUUID()}`;
+        return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+      }
+
+      function positiveModulo(value, divisor) {
+        return ((value % divisor) + divisor) % divisor;
+      }
+
+      function debounce(fn, wait) {
+        let timeout;
+        return (...args) => {
+          window.clearTimeout(timeout);
+          timeout = window.setTimeout(() => fn(...args), wait);
+        };
+      }
+
+      function isTypingTarget(target) {
+        return ["INPUT", "TEXTAREA", "SELECT"].includes(target?.tagName) || target?.isContentEditable;
+      }
+
+      function pickInitialActiveId() {
+        if (allowsTemporary()) return "temp";
+        return app.classes[0]?.id || "temp";
+      }
+
+    })();
+  </script>
+</body>
+</html>

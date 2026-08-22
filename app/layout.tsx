@@ -35,7 +35,7 @@ export const metadata: Metadata = {
         url: imageUrl,
         width: 120,
         height: 76,
-        alt: "John Spurling - Education / Behaviour / AI & Tech / Tools / Media",
+        alt: "John Spurling - Behaviour / AI & Tech / Tools / Maths Resources / Media",
       },
     ],
   },

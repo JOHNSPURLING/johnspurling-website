@@ -56,30 +56,41 @@ export function PathwayGrid({ pathways }: { pathways: Pathway[] }) {
 export function ToolGrid({ tools }: { tools: ToolCardData[] }) {
   return (
     <div className="tool-grid">
-      {tools.map((tool) => (
-        <article className={tool.featured ? "tool-card featured" : "tool-card"} key={tool.name}>
-          <div className="tool-thumb" aria-hidden="true">
-            <span>{tool.thumbnailLabel}</span>
-          </div>
-          <div className="tool-card-body">
-            <div className="card-meta-row">
-              <span className="pill">{tool.category}</span>
-              {tool.featured ? <span className="pill pill-hot">Featured</span> : null}
+      {tools.map((tool) => {
+        const secondaryHref = tool.secondaryUrl ?? tool.repositoryUrl;
+        const secondaryLabel = tool.secondaryUrl
+          ? tool.secondaryLabel ?? "Open resource"
+          : "Project URL";
+
+        return (
+          <article className={tool.featured ? "tool-card featured" : "tool-card"} key={tool.name}>
+            <div className="tool-thumb" aria-hidden="true">
+              {tool.thumbnailSrc ? (
+                <img src={tool.thumbnailSrc} alt="" loading="lazy" />
+              ) : (
+                <span>{tool.thumbnailLabel}</span>
+              )}
             </div>
-            <h3>{tool.name}</h3>
-            <p>{tool.description}</p>
-            {tool.liveUrl || tool.repositoryUrl ? (
-              <div className="tool-actions">
-                <ActionLink href={tool.liveUrl}>Open tool</ActionLink>
-                <ActionLink href={tool.repositoryUrl} variant="secondary">
-                  Project URL
-                </ActionLink>
+            <div className="tool-card-body">
+              <div className="card-meta-row">
+                <span className="pill">{tool.category}</span>
+                {tool.featured ? <span className="pill pill-hot">Featured</span> : null}
               </div>
-            ) : null}
-            <span className="status-note">{tool.status}</span>
-          </div>
-        </article>
-      ))}
+              <h3>{tool.name}</h3>
+              <p>{tool.description}</p>
+              {tool.liveUrl || secondaryHref ? (
+                <div className="tool-actions">
+                  <ActionLink href={tool.liveUrl}>{tool.primaryLabel ?? "Open tool"}</ActionLink>
+                  <ActionLink href={secondaryHref} variant="secondary">
+                    {secondaryLabel}
+                  </ActionLink>
+                </div>
+              ) : null}
+              <span className="status-note">{tool.status}</span>
+            </div>
+          </article>
+        );
+      })}
     </div>
   );
 }
@@ -93,11 +104,13 @@ export function VideoShowcase({
 }) {
   return (
     <div className="media-layout">
-      <div className="category-rail" aria-label="Future YouTube categories">
-        {categories.map((category) => (
-          <span key={category}>{category}</span>
-        ))}
-      </div>
+      {categories.length > 0 ? (
+        <div className="category-rail" aria-label="YouTube video grouping">
+          {categories.map((category) => (
+            <span key={category}>{category}</span>
+          ))}
+        </div>
+      ) : null}
       <div className="video-grid">
         {videos.map((video) => (
           <article className="embed-card" key={video.title}>
@@ -108,6 +121,7 @@ export function VideoShowcase({
                   title={video.title}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
+                  loading="lazy"
                 />
               ) : (
                 <div className="embed-placeholder">
@@ -117,9 +131,9 @@ export function VideoShowcase({
               )}
             </div>
             <div className="embed-copy">
-              <span className="pill">{video.category}</span>
+              {video.category ? <span className="pill">{video.category}</span> : null}
               <h3>{video.title}</h3>
-              <p>{video.description}</p>
+              {video.description ? <p>{video.description}</p> : null}
             </div>
           </article>
         ))}
@@ -133,14 +147,28 @@ export function PodcastPanel({ episodes }: { episodes: PodcastSlot[] }) {
     <div className="podcast-grid">
       {episodes.map((episode) => (
         <article className="podcast-card" key={episode.title}>
-          <div className="podcast-visual" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-            <span />
-          </div>
+          {episode.youtubeEmbedUrl ? (
+            <div className="video-frame episode-frame">
+              <iframe
+                src={episode.youtubeEmbedUrl}
+                title={episode.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                loading="lazy"
+              />
+            </div>
+          ) : (
+            <div className="podcast-visual" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+          )}
           <div>
-            <p className="card-kicker">Podcast / Spotify</p>
+            <p className="card-kicker">
+              {episode.youtubeEmbedUrl ? "Episode / YouTube" : "Podcast / Spotify"}
+            </p>
             <h3>{episode.title}</h3>
             <p>{episode.description}</p>
             {episode.spotifyEmbedUrl ? (
@@ -148,9 +176,14 @@ export function PodcastPanel({ episodes }: { episodes: PodcastSlot[] }) {
                 src={episode.spotifyEmbedUrl}
                 title={episode.title}
                 allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                loading="lazy"
               />
+            ) : episode.youtubeEmbedUrl ? (
+              <a className="text-link" href={episode.youtubeEmbedUrl.replace("youtube-nocookie.com/embed/", "youtube.com/watch?v=")}>
+                Open on YouTube
+              </a>
             ) : (
-              <span className="embed-note">Spotify embed ready</span>
+              <span className="embed-note">Embed ready</span>
             )}
           </div>
         </article>

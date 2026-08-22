@@ -3,7 +3,7 @@ import { navigationItems, siteConfig } from "@/app/data/site-content";
 export function SiteHeader() {
   return (
     <header className="site-header">
-      <a className="brand-lockup" href="#home" aria-label="John Spurling home">
+      <a className="brand-lockup" href="/" aria-label="John Spurling home">
         <span className="brand-mark">JS</span>
         <span className="brand-text">{siteConfig.name}</span>
       </a>
